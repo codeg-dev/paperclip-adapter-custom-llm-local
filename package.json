@@ -1,0 +1,66 @@
+{
+  "name": "paperclip-adapter-custom-llm-local",
+  "version": "0.1.0",
+  "description": "Paperclip adapter for OpenAI- and Anthropic-compatible local or proxy LLM HTTP endpoints.",
+  "type": "module",
+  "license": "MIT",
+  "author": "codeg-dev",
+  "homepage": "https://github.com/codeg-dev/paperclip-adapter-custom-llm-local#readme",
+  "bugs": {
+    "url": "https://github.com/codeg-dev/paperclip-adapter-custom-llm-local/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codeg-dev/paperclip-adapter-custom-llm-local.git"
+  },
+  "keywords": [
+    "paperclip",
+    "paperclip-adapter",
+    "llm",
+    "local-llm",
+    "openai-compatible",
+    "anthropic-compatible",
+    "adapter",
+    "agent"
+  ],
+  "paperclip": {
+    "adapterUiParser": "1.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js"
+    },
+    "./ui-parser": "./dist/ui-parser.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run clean && npm run typecheck && npm test && npm run build && node scripts/verify-public-safety.mjs"
+  },
+  "dependencies": {
+    "@paperclipai/adapter-utils": "^2026.416.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
