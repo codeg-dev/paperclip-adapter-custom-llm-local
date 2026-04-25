@@ -21,12 +21,23 @@ agent runtime.
 
 ## Installation
 
-Install it from the Paperclip adapter manager once published to npm:
+Install it from npm through the Paperclip adapter manager:
 
 ```text
 Settings -> Adapters -> Install Adapter -> npm package
 paperclip-adapter-custom-llm-local
 ```
+
+Or install through the adapter API:
+
+```bash
+curl -X POST http://localhost:3100/api/adapters \
+  -H "Content-Type: application/json" \
+  -d '{"packageName":"paperclip-adapter-custom-llm-local"}'
+```
+
+If your Paperclip instance requires board authentication, include your normal
+authorization headers with the request above.
 
 For local development, install from a local directory through the same adapter
 manager or by adding an entry to `~/.paperclip/adapter-plugins.json`:
