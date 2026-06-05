@@ -57,6 +57,18 @@ Restart Paperclip after changing the plugin list.
 
 ## Adapter Configuration
 
+Once the adapter is installed and Paperclip has restarted, configuration fields appear automatically in the agent settings UI:
+
+```text
+Agent Settings → Adapter → Custom LLM (Local)
+```
+
+If the fields do not appear, make sure the adapter is installed and Paperclip has been restarted. If you installed from a local path, pull the latest code and restart Paperclip.
+
+### Configuration fields
+
+The following fields are rendered by Paperclip from the adapter's config schema:
+
 Example for an OpenAI-compatible local proxy:
 
 ```json
