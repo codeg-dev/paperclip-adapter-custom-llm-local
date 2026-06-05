@@ -1,5 +1,6 @@
 import type { ServerAdapterModule } from "@paperclipai/adapter-utils";
 import { execute, testEnvironment } from "./server/index.js";
+import { getConfigSchema } from "./schema.js";
 
 export { getConfigSchema } from "./schema.js";
 
@@ -35,6 +36,7 @@ export function createServerAdapter(): ServerAdapterModule {
     execute,
     testEnvironment,
     models,
+    getConfigSchema,
     supportsInstructionsBundle: true,
     instructionsPathKey: "instructionsFilePath",
     agentConfigurationDoc,
