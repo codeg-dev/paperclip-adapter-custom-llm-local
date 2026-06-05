@@ -53,7 +53,7 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm test && npm run build && node scripts/verify-public-safety.mjs"
   },
   "dependencies": {
-    "@paperclipai/adapter-utils": "^2026.416.0"
+    "@paperclipai/adapter-utils": "^2026.529.0"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
