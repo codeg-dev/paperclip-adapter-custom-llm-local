@@ -117,7 +117,7 @@ export async function callOpenAiChatCompletions(input: OAICallInput): Promise<Ad
     provider: "custom-llm-local",
     model: resolvedModel,
     usage,
-    summary: `openai_chat_completions @ ${new URL(url).host} → succeeded`,
+    summary: text || `openai_chat_completions @ ${new URL(url).host} → succeeded`,
     resultJson,
   };
 }

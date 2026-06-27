@@ -122,6 +122,32 @@ The adapter passes `model` through unchanged. Some proxies expect bare model IDs
 such as `gpt-4.1-mini`; others expect provider-prefixed IDs such as
 `openai/gpt-4.1-mini`. Use the exact model string your endpoint accepts.
 
+## llama.cpp
+
+`llama-server` exposes both OpenAI-compatible `/v1/chat/completions` and
+Anthropic-compatible `/v1/messages` APIs. Choose the adapter transport that
+matches the endpoint you want to call.
+
+For OpenAI Chat Completions:
+
+```json
+{
+  "model": "your-llama-model",
+  "baseUrl": "http://127.0.0.1:8080/v1",
+  "transport": "openai_chat_completions"
+}
+```
+
+For Anthropic Messages:
+
+```json
+{
+  "model": "your-llama-model",
+  "baseUrl": "http://127.0.0.1:8080/v1",
+  "transport": "anthropic_messages"
+}
+```
+
 ## Security Notes
 
 - Do not put API key values in `adapterConfig`.

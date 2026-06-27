@@ -105,6 +105,7 @@ describe("callOpenAiChatCompletions", () => {
       timedOut: false,
       model: "upstream-model",
       usage: { inputTokens: 11, outputTokens: 7 },
+      summary: "pong",
       resultJson: { text: "pong", finishReason: "stop" },
     });
   });
