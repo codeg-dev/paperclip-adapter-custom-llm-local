@@ -107,6 +107,7 @@ describe("callAnthropicMessages", () => {
       timedOut: false,
       model: "upstream-model",
       usage: { inputTokens: 13, outputTokens: 5 },
+      summary: "pong",
       resultJson: { text: "pong", finishReason: "end_turn" },
     });
   });

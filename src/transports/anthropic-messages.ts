@@ -117,7 +117,7 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
     provider: "custom-llm-local",
     model: resolvedModel,
     usage,
-    summary: `anthropic_messages @ ${new URL(url).host} → succeeded`,
+    summary: text || `anthropic_messages @ ${new URL(url).host} → succeeded`,
     resultJson,
   };
 }
