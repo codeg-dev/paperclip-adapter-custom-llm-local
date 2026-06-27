@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/codeg-dev/paperclip-adapter-custom-llm-local.git"
+    "url": "git+https://github.com/codeg-dev/paperclip-adapter-custom-llm-local.git"
   },
   "keywords": [
     "paperclip",
