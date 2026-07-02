@@ -18,7 +18,7 @@ agent runtime.
 - Redacted auth/key/token/secret headers in adapter logs
 - Paperclip config-schema support for the generic adapter form
 - Environment diagnostics through Paperclip's `Test environment` button
-
+- Best-effort tool support (see [Tool Support](#tool-support) below)
 ## Installation
 
 Install it from npm through the Paperclip adapter manager:
@@ -148,6 +148,29 @@ For Anthropic Messages:
 }
 ```
 
+## Tool Support
+
+The adapter forwards tool definitions from the execution context to the LLM
+endpoint and parses tool-call requests from the response. This is a best-effort
+implementation:
+
+- If the Paperclip runtime provides tool definitions in the execution context,
+  they are passed through to the LLM as `tools` in the request body.
+- For the OpenAI Chat Completions transport, tools are sent in OpenAI format
+  (`{ type: "function", function: { name, description, parameters } }`).
+- For the Anthropic Messages transport, tools are automatically converted to
+  Anthropic format (`{ name, description, input_schema }`) if they arrive in
+  OpenAI format. Tools already in Anthropic format are passed through as-is.
+- Tool-call requests in the LLM response are parsed into a normalized array
+  (`toolCalls`) in the result JSON, with each entry containing `id`, `name`, and
+  `arguments` (JSON string).
+
+Whether the Paperclip core runtime interprets and acts on these tool calls
+depends on the Paperclip version. The adapter prepares the data; interpretation
+is outside the adapter's scope.
+
+If your endpoint does not support tools, the adapter simply omits the `tools`
+field from the request and no tool calls are parsed from the response.
 ## Security Notes
 
 - Do not put API key values in `adapterConfig`.

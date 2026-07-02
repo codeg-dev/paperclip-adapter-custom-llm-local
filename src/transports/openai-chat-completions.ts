@@ -13,6 +13,7 @@ export interface OAICallInput {
   apiKey: string;
   systemPrompt: string | null;
   userPrompt: string;
+  tools?: unknown[];
   onLog: (stream: "stdout" | "stderr", chunk: string) => Promise<void>;
   signal: AbortSignal;
 }
@@ -20,7 +21,14 @@ export interface OAICallInput {
 interface OAIResponse {
   model?: string;
   choices?: Array<{
-    message?: { content?: string };
+    message?: {
+      content?: string;
+      tool_calls?: Array<{
+        id: string;
+        type: string;
+        function: { name: string; arguments: string };
+      }>;
+    };
     finish_reason?: string;
   }>;
   usage?: {
@@ -31,7 +39,7 @@ interface OAIResponse {
 }
 
 export async function callOpenAiChatCompletions(input: OAICallInput): Promise<AdapterExecutionResult> {
-  const { config, apiKey, systemPrompt, userPrompt, onLog, signal } = input;
+  const { config, apiKey, systemPrompt, userPrompt, tools, onLog, signal } = input;
 
   const url = `${config.baseUrl.replace(/\/$/, "")}/chat/completions`;
 
@@ -59,6 +67,7 @@ export async function callOpenAiChatCompletions(input: OAICallInput): Promise<Ad
         model: config.model,
         stream: false,
         messages,
+        ...(tools ? { tools } : {}),
       }),
       signal,
     });
@@ -107,6 +116,15 @@ export async function callOpenAiChatCompletions(input: OAICallInput): Promise<Ad
 
   const resultJson: Record<string, unknown> = { text, finishReason };
   if (config.modelAlias) resultJson.modelAlias = config.modelAlias;
+
+  const toolCalls = parsed.choices?.[0]?.message?.tool_calls;
+  if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+    resultJson.toolCalls = toolCalls.map((tc) => ({
+      id: tc.id,
+      name: tc.function.name,
+      arguments: tc.function.arguments,
+    }));
+  }
 
   await onLog("stdout", `[custom-llm-local] succeeded (model=${resolvedModel}, inputTokens=${usage?.inputTokens ?? "?"},outputTokens=${usage?.outputTokens ?? "?"})\n`);
 

@@ -131,4 +131,104 @@ describe("callAnthropicMessages", () => {
 
     await expect(call(controller.signal)).resolves.toMatchObject({ errorCode: "TIMEOUT", timedOut: true });
   });
+
+  it("converts OpenAI-style tools to Anthropic format in the request body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        model: "upstream-model",
+        content: [{ type: "text", text: "ok" }],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "get_weather",
+          description: "Get weather",
+          parameters: { type: "object", properties: { city: { type: "string" } } },
+        },
+      },
+    ];
+
+    await callAnthropicMessages({
+      config: config(),
+      apiKey: "secret-key",
+      systemPrompt: null,
+      userPrompt: "hello",
+      tools,
+      onLog,
+      signal: new AbortController().signal,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.tools).toEqual([
+      {
+        name: "get_weather",
+        description: "Get weather",
+        input_schema: { type: "object", properties: { city: { type: "string" } } },
+      },
+    ]);
+  });
+
+  it("passes through tools already in Anthropic format without conversion", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        model: "upstream-model",
+        content: [{ type: "text", text: "ok" }],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tools = [
+      { name: "get_weather", description: "Get weather", input_schema: { type: "object", properties: {} } },
+    ];
+
+    await callAnthropicMessages({
+      config: config(),
+      apiKey: "secret-key",
+      systemPrompt: null,
+      userPrompt: "hello",
+      tools,
+      onLog,
+      signal: new AbortController().signal,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.tools).toEqual(tools);
+  });
+
+  it("parses tool_use blocks from the response into resultJson.toolCalls", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          model: "upstream-model",
+          content: [
+            { type: "text", text: "Let me check." },
+            { type: "tool_use", id: "toolu_01", name: "get_weather", input: { city: "Seoul" } },
+          ],
+          stop_reason: "tool_use",
+        }),
+      ),
+    );
+
+    const result = await callAnthropicMessages({
+      config: config(),
+      apiKey: "secret-key",
+      systemPrompt: null,
+      userPrompt: "What's the weather?",
+      tools: [{ type: "function", function: { name: "get_weather" } }],
+      onLog,
+      signal: new AbortController().signal,
+    });
+
+    expect(result.resultJson.toolCalls).toEqual([
+      { id: "toolu_01", name: "get_weather", arguments: '{"city":"Seoul"}' },
+    ]);
+  });
+
 });

@@ -15,13 +15,20 @@ export interface AnthropicCallInput {
   apiKey: string;
   systemPrompt: string | null;
   userPrompt: string;
+  tools?: unknown[];
   onLog: (stream: "stdout" | "stderr", chunk: string) => Promise<void>;
   signal: AbortSignal;
 }
 
 interface AnthropicResponse {
   model?: string;
-  content?: Array<{ type?: string; text?: string }>;
+  content?: Array<{
+    type?: string;
+    text?: string;
+    id?: string;
+    name?: string;
+    input?: unknown;
+  }>;
   stop_reason?: string;
   usage?: {
     input_tokens?: number;
@@ -30,7 +37,7 @@ interface AnthropicResponse {
 }
 
 export async function callAnthropicMessages(input: AnthropicCallInput): Promise<AdapterExecutionResult> {
-  const { config, apiKey, systemPrompt, userPrompt, onLog, signal } = input;
+  const { config, apiKey, systemPrompt, userPrompt, tools, onLog, signal } = input;
 
   const url = `${config.baseUrl.replace(/\/$/, "")}/messages`;
 
@@ -51,6 +58,9 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   };
   if (systemPrompt) {
     body.system = systemPrompt;
+  }
+  if (tools && tools.length > 0) {
+    body.tools = convertToolsToAnthropic(tools);
   }
 
   let response: Response;
@@ -108,6 +118,15 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   const resultJson: Record<string, unknown> = { text, finishReason };
   if (config.modelAlias) resultJson.modelAlias = config.modelAlias;
 
+  const toolUseBlocks = parsed.content?.filter((block) => block.type === "tool_use") ?? [];
+  if (toolUseBlocks.length > 0) {
+    resultJson.toolCalls = toolUseBlocks.map((block) => ({
+      id: block.id ?? "",
+      name: block.name ?? "",
+      arguments: typeof block.input === "string" ? block.input : JSON.stringify(block.input ?? {}),
+    }));
+  }
+
   await onLog("stdout", `[custom-llm-local] succeeded (model=${resolvedModel}, inputTokens=${usage?.inputTokens ?? "?"},outputTokens=${usage?.outputTokens ?? "?"})\n`);
 
   return {
@@ -120,4 +139,29 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
     summary: text || `anthropic_messages @ ${new URL(url).host} → succeeded`,
     resultJson,
   };
+}
+
+/**
+ * Convert OpenAI-style tool definitions to Anthropic format.
+ * OpenAI: { type: "function", function: { name, description, parameters } }
+ * Anthropic: { name, description, input_schema }
+ * If the tools are already in Anthropic format (have name + input_schema), pass through.
+ */
+function convertToolsToAnthropic(tools: unknown[]): unknown[] {
+  return tools.map((tool) => {
+    if (typeof tool !== "object" || tool === null) return tool;
+    const t = tool as Record<string, unknown>;
+    // Already Anthropic format
+    if (t.name && t.input_schema) return t;
+    // OpenAI format conversion
+    const fn = t.function as Record<string, unknown> | undefined;
+    if (fn && typeof fn.name === "string") {
+      return {
+        name: fn.name,
+        description: fn.description,
+        input_schema: fn.parameters ?? { type: "object", properties: {} },
+      };
+    }
+    return t;
+  });
 }

@@ -129,4 +129,94 @@ describe("callOpenAiChatCompletions", () => {
 
     await expect(call(controller.signal)).resolves.toMatchObject({ errorCode: "TIMEOUT", timedOut: true });
   });
+
+  it("includes tools in the request body when provided", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        model: "upstream-model",
+        choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "get_weather",
+          description: "Get weather",
+          parameters: { type: "object", properties: { city: { type: "string" } } },
+        },
+      },
+    ];
+
+    await callOpenAiChatCompletions({
+      config: config(),
+      apiKey: "secret-key",
+      systemPrompt: null,
+      userPrompt: "hello",
+      tools,
+      onLog,
+      signal: new AbortController().signal,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toMatchObject({ tools });
+  });
+
+  it("omits tools from the request body when not provided", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        model: "upstream-model",
+        choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await call();
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).not.toHaveProperty("tools");
+  });
+
+  it("parses tool_calls from the response into resultJson.toolCalls", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          model: "upstream-model",
+          choices: [
+            {
+              message: {
+                content: null,
+                tool_calls: [
+                  {
+                    id: "call_001",
+                    type: "function",
+                    function: { name: "get_weather", arguments: '{"city":"Seoul"}' },
+                  },
+                ],
+              },
+              finish_reason: "tool_calls",
+            },
+          ],
+        }),
+      ),
+    );
+
+    const result = await callOpenAiChatCompletions({
+      config: config(),
+      apiKey: "secret-key",
+      systemPrompt: null,
+      userPrompt: "What's the weather?",
+      tools: [{ type: "function", function: { name: "get_weather" } }],
+      onLog,
+      signal: new AbortController().signal,
+    });
+
+    expect(result.resultJson.toolCalls).toEqual([
+      { id: "call_001", name: "get_weather", arguments: '{"city":"Seoul"}' },
+    ]);
+  });
+
 });

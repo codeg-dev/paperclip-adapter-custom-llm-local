@@ -90,6 +90,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       apiKey,
       systemPrompt,
       userPrompt,
+      tools: extractTools(context),
       onLog,
       signal: controller.signal,
     };
@@ -102,4 +103,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     clearTimeout(timeoutTimer);
     if (graceTimer) clearTimeout(graceTimer);
   }
+}
+
+/**
+ * Best-effort extraction of tool definitions from the execution context.
+ * Paperclip may inject tools under context.tools; if absent or not an array,
+ * returns undefined so transports simply omit the tools field from the request.
+ */
+function extractTools(context: Record<string, unknown>): unknown[] | undefined {
+  const raw = context.tools;
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  return raw;
 }
